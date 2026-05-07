@@ -1,42 +1,36 @@
 package com.datafood_backend.controller;
 
 import com.datafood_backend.dto.SupplierDTO;
+import com.datafood_backend.model.Supplier;
 import com.datafood_backend.service.SupplierService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/suppliers")
-@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173") // <--- CLAVE PARA QUE REACT PUEDA CONECTARSE
 public class SupplierController {
 
-    private final SupplierService supplierService;
-
-    @GetMapping
-    public List<SupplierDTO> getAll() {
-        return supplierService.getAll();
-    }
-
-    @GetMapping("/{id}")
-    public SupplierDTO getById(@PathVariable Integer id) {
-        return supplierService.getById(id);
-    }
+    @Autowired
+    private SupplierService supplierService;
 
     @PostMapping
-    public SupplierDTO create(@RequestBody SupplierDTO dto) {
-        return supplierService.create(dto);
+    public ResponseEntity<String> saveSupplier(@RequestBody SupplierDTO supplierDTO) {
+        try {
+            supplierService.createSupplier(supplierDTO);
+            return ResponseEntity.ok("Proveedor guardado con éxito");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al guardar: " + e.getMessage());
+        }
     }
 
-    @PutMapping("/{id}")
-    public SupplierDTO update(@PathVariable Integer id, @RequestBody SupplierDTO dto) {
-        return supplierService.update(id, dto);
+    // Agrégalo debajo de tu método saveSupplier
+    @GetMapping
+    public ResponseEntity<List<Supplier>> getAllSuppliers() {
+        return ResponseEntity.ok(supplierService.getAllSuppliers());
     }
 
-    @PatchMapping("/{id}/toggle-status")
-    public ResponseEntity<Void> toggleStatus(@PathVariable Integer id) {
-        supplierService.toggleStatus(id);
-        return ResponseEntity.ok().build();
-    }
 }
