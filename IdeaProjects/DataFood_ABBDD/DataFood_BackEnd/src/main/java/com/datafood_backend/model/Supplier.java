@@ -9,6 +9,25 @@ import java.util.List;
 @Table(name = "Supplier")
 public class Supplier {
 
+    // Dentro de tu clase Supplier.java
+
+    public void setPhones(List<SupplierPhone> phones) {
+        this.phones = phones;
+        if (phones != null) {
+            phones.forEach(p -> p.setSupplier(this));
+        }
+    }
+
+    public void setAddresses(List<SupplierAddress> addresses) {
+        this.addresses = addresses;
+        if (addresses != null) {
+            for (SupplierAddress address : addresses) {
+                address.setSupplier(this); // Esto vincula el hijo con el padre
+            }
+        }
+    }
+
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer supplierId;
