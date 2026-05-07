@@ -81,9 +81,9 @@ export default function SupplierList() {
           {filtered.map(s => (
             <tr key={s.supplierId}>
               <td>{s.name}</td>
-              <td>{s.phones?.[0] ?? '—'}</td>
+              <td>{s.phones?.[0]?.phone ?? '—'}</td>
               <td>{s.company}</td>
-              <td>{s.addresses?.[0] ?? '—'}</td>
+              <td>{s.addresses?.[0]?.address ?? '—'}</td>
               <td>{s.description ?? '—'}</td>
               <td>
                 <label className="toggle-switch">
