@@ -1,0 +1,82 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+.insumos-page {
+    min-height: 100vh;
+    background: #fde8d0;
+    padding: 2rem;
+    font-family: sans-serif;
+}
+
+.insumos-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.btn-back-insumos {
+    background: #20b2aa;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.55rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-back-insumos:hover { background: #178f89; }
+
+.insumos-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #333;
+}
+
+/* Grid de tarjetas */
+.insumos-grid {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+}
+
+.insumo-card {
+    background: #f97316;
+    border: none;
+    border-radius: 16px;
+    width: 220px;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    padding: 1rem;
+}
+.insumo-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+}
+
+.insumo-icon {
+    font-size: 2.8rem;
+}
+
+.insumo-label {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.insumo-sub {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.85);
+    text-align: center;
+}

@@ -1,5 +1,11 @@
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Dashboard.css';
+
+// Importaciones con la ruta correcta "./" ya que están en la misma carpeta "pages"
+import AbrirCaja from './Caja/AbrirCaja';
+import CerrarCaja from './Caja/CerrarCaja';
+import RetiroDeposito from './Caja/RetiroDeposito';
 
 const modules = [
   { label: 'Ventas',              icon: '🛒', path: '/sales' },
@@ -24,6 +30,20 @@ export default function Dashboard() {
   const navigate  = useNavigate();
   const location  = useLocation();
 
+  const [modalActivo, setModalActivo] = useState(null);
+
+  const handleModuloClick = (path) => {
+    if (path === '/open-register') {
+      setModalActivo('abrir');
+    } else if (path === '/close-register') {
+      setModalActivo('cerrar');
+    } else if (path === '/cash-movement') {
+      setModalActivo('movimiento');
+    } else {
+      navigate(path);
+    }
+  };
+
   return (
       <div className="dashboard-layout">
 
@@ -45,7 +65,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Nav links spread vertically */}
           <nav className="sidebar-nav">
             {sidebarLinks.map(link => (
                 <button
@@ -68,7 +87,7 @@ export default function Dashboard() {
                 <button
                     key={mod.path}
                     className="module-card"
-                    onClick={() => navigate(mod.path)}
+                    onClick={() => handleModuloClick(mod.path)}
                 >
                   <span className="module-label">{mod.label}</span>
                   <span className="module-icon">{mod.icon}</span>
@@ -76,6 +95,11 @@ export default function Dashboard() {
             ))}
           </div>
         </main>
+
+        {/* ── MODALES ── */}
+        {modalActivo === 'abrir' && <AbrirCaja onClose={() => setModalActivo(null)} />}
+        {modalActivo === 'cerrar' && <CerrarCaja onClose={() => setModalActivo(null)} />}
+        {modalActivo === 'movimiento' && <RetiroDeposito onClose={() => setModalActivo(null)} />}
 
       </div>
   );
