@@ -8,19 +8,15 @@ import lombok.Data;
 @Table(name = "SupplierPhone")
 public class SupplierPhone {
 
-
-
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "supplierPhoneId")
     private Integer supplierPhoneId;
 
+    @Column(name = "phone", nullable = false, length = 8)
     private String phone;
 
-    // Haz esto en AMBOS (SupplierPhone y SupplierAddress)
     @ManyToOne
     @JoinColumn(name = "supplier_supplierId", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore // <--- ESTO EVITA EL ERROR 500 AL GUARDAR
     private Supplier supplier;
-
 }

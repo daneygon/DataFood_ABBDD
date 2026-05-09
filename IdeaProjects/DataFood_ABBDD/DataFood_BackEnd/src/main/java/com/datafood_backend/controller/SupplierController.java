@@ -1,9 +1,8 @@
 package com.datafood_backend.controller;
 
 import com.datafood_backend.dto.SupplierDTO;
-import com.datafood_backend.model.Supplier;
 import com.datafood_backend.service.SupplierService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,26 +10,41 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/suppliers")
-@CrossOrigin(origins = "http://localhost:5173") // <--- CLAVE PARA QUE REACT PUEDA CONECTARSE
+@CrossOrigin(origins = "http://localhost:5173")
+@RequiredArgsConstructor
 public class SupplierController {
 
-    @Autowired
-    private SupplierService supplierService;
+    private final SupplierService SupplierService;
 
-    @PostMapping
-    public ResponseEntity<String> saveSupplier(@RequestBody SupplierDTO supplierDTO) {
-        try {
-            supplierService.createSupplier(supplierDTO);
-            return ResponseEntity.ok("Proveedor guardado con éxito");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error al guardar: " + e.getMessage());
-        }
-    }
-
-    // Agrégalo debajo de tu método saveSupplier
+    // GET all suppliers
     @GetMapping
-    public ResponseEntity<List<Supplier>> getAllSuppliers() {
-        return ResponseEntity.ok(supplierService.getAllSuppliers());
+    public ResponseEntity<List<SupplierDTO>> getAllSuppliers() {
+        return ResponseEntity.ok(SupplierService.getAll());
     }
 
+    // GET supplier by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<SupplierDTO> getSupplierById(@PathVariable Integer id) {
+        return ResponseEntity.ok(SupplierService.getById(id));
+    }
+
+    // POST create supplier
+    @PostMapping
+    public ResponseEntity<SupplierDTO> createSupplier(@RequestBody SupplierDTO supplierDTO) {
+        return ResponseEntity.ok(SupplierService.create(supplierDTO));
+    }
+
+    // PUT update supplier
+    @PutMapping("/{id}")
+    public ResponseEntity<SupplierDTO> updateSupplier(@PathVariable Integer id,
+                                                      @RequestBody SupplierDTO supplierDTO) {
+        return ResponseEntity.ok(SupplierService.update(id, supplierDTO));
+    }
+
+    // PATCH toggle status activo/inactivo
+    @PatchMapping("/{id}/toggle-status")
+    public ResponseEntity<Void> toggleStatus(@PathVariable Integer id) {
+        SupplierService.toggleStatus(id);
+        return ResponseEntity.ok().build();
+    }
 }

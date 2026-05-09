@@ -2,6 +2,8 @@ package com.datafood_backend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -9,44 +11,36 @@ import java.util.List;
 @Table(name = "Supplier")
 public class Supplier {
 
-    // Dentro de tu clase Supplier.java
-
-    public void setPhones(List<SupplierPhone> phones) {
-        this.phones = phones;
-        if (phones != null) {
-            phones.forEach(p -> p.setSupplier(this));
-        }
-    }
-
-    public void setAddresses(List<SupplierAddress> addresses) {
-        this.addresses = addresses;
-        if (addresses != null) {
-            for (SupplierAddress address : addresses) {
-                address.setSupplier(this); // Esto vincula el hijo con el padre
-            }
-        }
-    }
-
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "supplierId")
     private Integer supplierId;
 
-    @Column(nullable = false, length = 45)
+    @Column(name = "name", nullable = false, length = 45)
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false)
     private Byte status = 1;
 
-    @Column(nullable = false, length = 45)
+    @Column(name = "company", nullable = false, length = 45)
     private String company;
 
-    @Column(length = 45)
+    @Column(name = "description", length = 45)
     private String description;
 
-    @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL)
-    private List<SupplierPhone> phones;
+    @OneToMany(
+            mappedBy = "supplier",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private List<SupplierPhone> phones = new ArrayList<>();
 
-    @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL)
-    private List<SupplierAddress> addresses;
+    @OneToMany(
+            mappedBy = "supplier",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private List<SupplierAddress> addresses = new ArrayList<>();
 }
