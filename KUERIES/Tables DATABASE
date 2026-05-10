@@ -1,0 +1,250 @@
+        
+CREATE DATABASE DATAFOOD;
+GO
+
+USE DATAFOOD;
+GO
+
+-- =============================================
+-- SUPPLIER
+-- =============================================
+CREATE TABLE Supplier (
+    supplierId      INT IDENTITY(1,1) PRIMARY KEY,
+    name            VARCHAR(45)  NOT NULL,
+    status          TINYINT      NOT NULL DEFAULT 1,
+    company         VARCHAR(45)  NOT NULL,
+    description     VARCHAR(45)
+);
+GO
+
+-- =============================================
+-- SUPPLIER PHONE
+-- =============================================
+CREATE TABLE SupplierPhone (
+    supplierPhoneId     INT IDENTITY(1,1) PRIMARY KEY,
+    phone               VARCHAR(45) NOT NULL,
+    supplier_supplierId INT         NOT NULL,
+
+    CONSTRAINT FK_SupplierPhone_Supplier
+        FOREIGN KEY (supplier_supplierId)
+        REFERENCES Supplier(supplierId)
+);
+GO
+
+-- =============================================
+-- SUPPLIER ADDRESS
+-- =============================================
+CREATE TABLE SupplierAddress (
+    supplierAddressId   INT IDENTITY(1,1) PRIMARY KEY,
+    address             VARCHAR(45) NOT NULL,
+    supplier_supplierId INT         NOT NULL,
+
+    CONSTRAINT FK_SupplierAddress_Supplier
+        FOREIGN KEY (supplier_supplierId)
+        REFERENCES Supplier(supplierId)
+);
+GO
+
+-- =============================================
+-- SUPPLY CATEGORY
+-- =============================================
+CREATE TABLE SupplyCategory (
+    supplyCategoryId INT IDENTITY(1,1) PRIMARY KEY,
+    name             VARCHAR(45) NOT NULL
+);
+GO
+
+-- =============================================
+-- SUPPLY (Insumo)
+-- =============================================
+CREATE TABLE Supply (
+    supplyId                        INT IDENTITY(1,1) PRIMARY KEY,
+    availableQuantity               INT          NOT NULL CHECK (availableQuantity >= 0),
+    minimumQuantity                 INT          NOT NULL CHECK (minimumQuantity >= 0),
+    name                            VARCHAR(45)  NOT NULL,
+    unitOfMeasure                   VARCHAR(45)  NOT NULL,
+    supplyCategory_supplyCategoryId INT          NOT NULL,
+
+    CONSTRAINT FK_Supply_SupplyCategory
+        FOREIGN KEY (supplyCategory_supplyCategoryId)
+        REFERENCES SupplyCategory(supplyCategoryId)
+);
+GO
+
+-- =============================================
+-- PURCHASE
+-- =============================================
+CREATE TABLE Purchase (
+    purchaseId          INT IDENTITY(1,1) PRIMARY KEY,
+    quantity            INT           NOT NULL CHECK (quantity > 0),
+    price               DECIMAL(10,2) NOT NULL CHECK (price >= 0),
+    purchaseDate        DATETIME      NOT NULL DEFAULT GETDATE(),
+    total               DECIMAL(10,2) NOT NULL CHECK (total >= 0),
+    supply_supplyId     INT           NOT NULL,
+    supplier_supplierId INT           NOT NULL,
+
+    CONSTRAINT FK_Purchase_Supply
+        FOREIGN KEY (supply_supplyId)
+        REFERENCES Supply(supplyId),
+
+    CONSTRAINT FK_Purchase_Supplier
+        FOREIGN KEY (supplier_supplierId)
+        REFERENCES Supplier(supplierId)
+);
+GO
+
+-- =============================================
+-- PRODUCT CATEGORY
+-- =============================================
+CREATE TABLE ProductCategory (
+    productCategoryId INT IDENTITY(1,1) PRIMARY KEY,
+    name              NVARCHAR(30) NOT NULL
+);
+GO
+
+-- =============================================
+-- PRODUCT
+-- =============================================
+CREATE TABLE Product (
+    productId                           INT IDENTITY(1,1) PRIMARY KEY,
+    name                                VARCHAR(45)   NOT NULL,
+    price                               DECIMAL(10,2) NOT NULL CHECK (price >= 0),
+    status                              TINYINT       NOT NULL DEFAULT 1,
+    productCategory_productCategoryId   INT           NOT NULL,
+
+    CONSTRAINT FK_Product_ProductCategory
+        FOREIGN KEY (productCategory_productCategoryId)
+        REFERENCES ProductCategory(productCategoryId)
+);
+GO
+
+-- =============================================
+-- SUPPLY PRODUCT  (N:M)
+-- =============================================
+CREATE TABLE SupplyProduct (
+    supply_supplyId     INT NOT NULL,
+    product_productId   INT NOT NULL,
+
+    PRIMARY KEY (supply_supplyId, product_productId),
+
+    CONSTRAINT FK_SupplyProduct_Supply
+        FOREIGN KEY (supply_supplyId)
+        REFERENCES Supply(supplyId),
+
+    CONSTRAINT FK_SupplyProduct_Product
+        FOREIGN KEY (product_productId)
+        REFERENCES Product(productId)
+);
+GO
+
+-- =============================================
+-- POSITION (Cargo)
+-- =============================================
+CREATE TABLE Position (
+    positionId  INT IDENTITY(1,1) PRIMARY KEY,
+    positionName VARCHAR(45) NOT NULL
+);
+GO
+
+-- =============================================
+-- EMPLOYEE
+-- =============================================
+CREATE TABLE Employee (
+    employeeId              INT IDENTITY(1,1) PRIMARY KEY,
+    firstName               VARCHAR(45)   NOT NULL,
+    lastName                VARCHAR(45)   NOT NULL,
+    password                VARCHAR(255)  NOT NULL,   -- use hashed password (BCrypt)
+    status                  TINYINT       NOT NULL DEFAULT 1,
+    salary                  DECIMAL(10,2) NOT NULL CHECK (salary >= 0),
+    nationalId              VARCHAR(45)   NOT NULL UNIQUE,
+    email                   VARCHAR(45)   NOT NULL UNIQUE,
+    position_positionId     INT           NOT NULL,
+
+    CONSTRAINT FK_Employee_Position
+        FOREIGN KEY (position_positionId)
+        REFERENCES Position(positionId)
+);
+GO
+
+-- =============================================
+-- PERMISSION
+-- =============================================
+CREATE TABLE Permission (
+    permissionId INT IDENTITY(1,1) PRIMARY KEY,
+    description  VARCHAR(45) NOT NULL
+);
+GO
+
+-- =============================================
+-- POSITION PERMISSION  (N:M)
+-- =============================================
+CREATE TABLE PositionPermission (
+    permission_permissionId INT NOT NULL,
+    position_positionId     INT NOT NULL,
+
+    PRIMARY KEY (permission_permissionId, position_positionId),
+
+    CONSTRAINT FK_PositionPermission_Permission
+        FOREIGN KEY (permission_permissionId)
+        REFERENCES Permission(permissionId),
+
+    CONSTRAINT FK_PositionPermission_Position
+        FOREIGN KEY (position_positionId)
+        REFERENCES Position(positionId)
+);
+GO
+
+-- =============================================
+-- SALE
+-- =============================================
+CREATE TABLE Sale (
+    saleId              INT IDENTITY(1,1) PRIMARY KEY,
+    total               DECIMAL(10,2) NOT NULL CHECK (total >= 0),
+    saleDate            DATETIME      NOT NULL DEFAULT GETDATE(),
+    saleType            VARCHAR(45)   NOT NULL,
+    customerName        VARCHAR(45),
+    employee_employeeId INT           NOT NULL,
+
+    CONSTRAINT FK_Sale_Employee
+        FOREIGN KEY (employee_employeeId)
+        REFERENCES Employee(employeeId)
+);
+GO
+
+-- =============================================
+-- SALE DETAIL
+-- =============================================
+CREATE TABLE SaleDetail (
+    saleDetailId        INT IDENTITY(1,1) PRIMARY KEY,
+    quantity            INT           NOT NULL CHECK (quantity > 0),
+    subtotal            DECIMAL(10,2) NOT NULL CHECK (subtotal >= 0),
+    historicalPrice     DECIMAL(10,2) NOT NULL CHECK (historicalPrice >= 0),
+    sale_saleId         INT           NOT NULL,
+    product_productId   INT           NOT NULL,
+
+    CONSTRAINT FK_SaleDetail_Sale
+        FOREIGN KEY (sale_saleId)
+        REFERENCES Sale(saleId),
+
+    CONSTRAINT FK_SaleDetail_Product
+        FOREIGN KEY (product_productId)
+        REFERENCES Product(productId)
+);
+GO
+
+-- =============================================
+-- REPORT
+-- =============================================
+CREATE TABLE Report (
+    reportId            INT IDENTITY(1,1) PRIMARY KEY,
+    reportDate          DATETIME      NOT NULL DEFAULT GETDATE(),
+    openingAmount       DECIMAL(10,2) NOT NULL CHECK (openingAmount >= 0),
+    closingAmount       DECIMAL(10,2) NOT NULL CHECK (closingAmount >= 0),
+    cashDifference      DECIMAL(10,2) NOT NULL,
+    employee_employeeId INT           NOT NULL,
+
+    CONSTRAINT FK_Report_Employee
+        FOREIGN KEY (employee_employeeId)
+        REFERENCES Employee(employeeId)
+);
+GO

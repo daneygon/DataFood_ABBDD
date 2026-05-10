@@ -1,0 +1,750 @@
+
+-- ================================================================
+-- DATAFOOD - BACKEND SQL LIMPIO 
+-- SOLO ELEMENTOS UTILIZADOS POR EL SISTEMA ACTUAL
+-- ================================================================
+
+USE DATAFOOD;
+GO
+
+-- ================================================================
+-- TABLAS
+-- ================================================================
+
+-- ================================================================
+-- PurchaseHeader
+-- ================================================================
+IF OBJECT_ID('dbo.PurchaseHeader', 'U') IS NULL
+BEGIN
+    CREATE TABLE PurchaseHeader (
+        purchaseHeaderId    INT IDENTITY(1,1) PRIMARY KEY,
+
+        purchaseNumber AS (
+            'C-' + RIGHT('000000' + CAST(purchaseHeaderId AS VARCHAR), 6)
+        ) PERSISTED,
+
+        purchaseDate        DATETIME      NOT NULL DEFAULT GETDATE(),
+        paymentMethod       VARCHAR(30)   NOT NULL DEFAULT 'Efectivo',
+        status              VARCHAR(20)   NOT NULL DEFAULT 'Recibido',
+
+        subtotal            DECIMAL(10,2) NOT NULL DEFAULT 0,
+        tax                 DECIMAL(10,2) NOT NULL DEFAULT 0,
+        total               DECIMAL(10,2) NOT NULL DEFAULT 0,
+
+        invoiceNumber       VARCHAR(30) NULL,
+        notes               VARCHAR(200) NULL,
+
+        supplier_supplierId INT NOT NULL,
+        employee_employeeId INT NOT NULL,
+
+        CONSTRAINT FK_PurchaseHeader_Supplier
+            FOREIGN KEY (supplier_supplierId)
+            REFERENCES Supplier(supplierId),
+
+        CONSTRAINT FK_PurchaseHeader_Employee
+            FOREIGN KEY (employee_employeeId)
+            REFERENCES Employee(employeeId)
+    );
+END
+GO
+
+
+-- ================================================================
+-- PurchaseDetail
+-- ================================================================
+IF OBJECT_ID('dbo.PurchaseDetail', 'U') IS NULL
+BEGIN
+    CREATE TABLE PurchaseDetail (
+
+        purchaseDetailId INT IDENTITY(1,1) PRIMARY KEY,
+
+        quantity         DECIMAL(10,3) NOT NULL CHECK(quantity > 0),
+        unitPrice        DECIMAL(10,2) NOT NULL CHECK(unitPrice >= 0),
+        subtotal         DECIMAL(10,2) NOT NULL CHECK(subtotal >= 0),
+
+        purchaseHeader_id INT NOT NULL,
+        supply_supplyId   INT NOT NULL,
+
+        CONSTRAINT FK_PurchaseDetail_Header
+            FOREIGN KEY (purchaseHeader_id)
+            REFERENCES PurchaseHeader(purchaseHeaderId),
+
+        CONSTRAINT FK_PurchaseDetail_Supply
+            FOREIGN KEY (supply_supplyId)
+            REFERENCES Supply(supplyId)
+    );
+END
+GO
+
+
+-- ================================================================
+-- PurchaseChangeLog
+-- ================================================================
+IF OBJECT_ID('dbo.PurchaseChangeLog', 'U') IS NULL
+BEGIN
+    CREATE TABLE PurchaseChangeLog (
+
+        logId INT IDENTITY(1,1) PRIMARY KEY,
+
+        logDate DATETIME NOT NULL DEFAULT GETDATE(),
+
+        action VARCHAR(50) NOT NULL,
+        detail VARCHAR(500) NOT NULL,
+
+        purchaseHeader_id INT NOT NULL,
+        employee_employeeId INT NOT NULL,
+
+        CONSTRAINT FK_ChangeLog_Header
+            FOREIGN KEY (purchaseHeader_id)
+            REFERENCES PurchaseHeader(purchaseHeaderId),
+
+        CONSTRAINT FK_ChangeLog_Employee
+            FOREIGN KEY (employee_employeeId)
+            REFERENCES Employee(employeeId)
+    );
+END
+GO
+
+
+-- ================================================================
+-- PurchaseInvoice
+-- ================================================================
+IF OBJECT_ID('dbo.PurchaseInvoice', 'U') IS NULL
+BEGIN
+    CREATE TABLE PurchaseInvoice (
+
+        invoiceId INT IDENTITY(1,1) PRIMARY KEY,
+
+        invoiceNumber AS (
+            'F-' + RIGHT('0000000' + CAST(invoiceId AS VARCHAR), 7)
+        ) PERSISTED,
+
+        generatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+
+        subtotal    DECIMAL(10,2) NOT NULL,
+        taxRate     DECIMAL(5,2)  NOT NULL DEFAULT 18.00,
+        taxAmount   DECIMAL(10,2) NOT NULL,
+        totalAmount DECIMAL(10,2) NOT NULL,
+
+        supplierName    VARCHAR(100) NOT NULL,
+        supplierCompany VARCHAR(100) NOT NULL,
+
+        purchaseHeader_id INT NOT NULL UNIQUE,
+
+        CONSTRAINT FK_Invoice_Header
+            FOREIGN KEY (purchaseHeader_id)
+            REFERENCES PurchaseHeader(purchaseHeaderId)
+    );
+END
+GO
+
+
+-- ================================================================
+-- StockAdjustment
+-- ================================================================
+IF OBJECT_ID('dbo.StockAdjustment', 'U') IS NULL
+BEGIN
+    CREATE TABLE StockAdjustment (
+
+        adjustmentId INT IDENTITY(1,1) PRIMARY KEY,
+
+        adjustmentDate DATETIME NOT NULL DEFAULT GETDATE(),
+
+        quantityDecreased DECIMAL(10,3) NOT NULL CHECK(quantityDecreased > 0),
+
+        reason VARCHAR(200) NOT NULL DEFAULT 'Ajuste manual',
+
+        supply_supplyId INT NOT NULL,
+        employee_employeeId INT NOT NULL,
+
+        CONSTRAINT FK_StockAdj_Supply
+            FOREIGN KEY (supply_supplyId)
+            REFERENCES Supply(supplyId),
+
+        CONSTRAINT FK_StockAdj_Employee
+            FOREIGN KEY (employee_employeeId)
+            REFERENCES Employee(employeeId)
+    );
+END
+GO
+
+
+-- ================================================================
+-- COLUMNA ALERTA DE STOCK
+-- ================================================================
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID('Supply')
+    AND name = 'stockAlert'
+)
+BEGIN
+    ALTER TABLE Supply
+    ADD stockAlert BIT NOT NULL DEFAULT 0;
+END
+GO
+
+
+-- ================================================================
+-- STORED PROCEDURE: CREAR COMPRA
+-- ================================================================
+IF OBJECT_ID('dbo.SP_CreatePurchase', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.SP_CreatePurchase;
+GO
+
+CREATE PROCEDURE dbo.SP_CreatePurchase
+
+    @supplierId     INT,
+    @employeeId     INT,
+    @paymentMethod  VARCHAR(30) = 'Efectivo',
+    @invoiceNumber  VARCHAR(30) = NULL,
+    @taxRate        DECIMAL(5,2) = 18.00,
+    @detailsJson    NVARCHAR(MAX)
+
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+
+        BEGIN TRANSACTION;
+
+        DECLARE @details TABLE (
+            supplyId  INT,
+            quantity  DECIMAL(10,3),
+            unitPrice DECIMAL(10,2),
+            subtotal  DECIMAL(10,2)
+        );
+
+        INSERT INTO @details
+        SELECT
+            JSON_VALUE(value, '$.supplyId'),
+            CAST(JSON_VALUE(value, '$.quantity') AS DECIMAL(10,3)),
+            CAST(JSON_VALUE(value, '$.unitPrice') AS DECIMAL(10,2)),
+            CAST(JSON_VALUE(value, '$.quantity') AS DECIMAL(10,3))
+                * CAST(JSON_VALUE(value, '$.unitPrice') AS DECIMAL(10,2))
+        FROM OPENJSON(@detailsJson);
+
+        IF NOT EXISTS (SELECT 1 FROM @details)
+        BEGIN
+            THROW 50001, 'Debe incluir al menos un insumo.', 1;
+        END
+
+        DECLARE @subtotal DECIMAL(10,2);
+        DECLARE @taxAmount DECIMAL(10,2);
+        DECLARE @total DECIMAL(10,2);
+
+        SELECT @subtotal = SUM(subtotal)
+        FROM @details;
+
+        SET @taxAmount = ROUND(@subtotal * @taxRate / 100, 2);
+        SET @total = @subtotal + @taxAmount;
+
+        DECLARE @headerId INT;
+
+        INSERT INTO PurchaseHeader (
+            purchaseDate,
+            paymentMethod,
+            status,
+            subtotal,
+            tax,
+            total,
+            invoiceNumber,
+            supplier_supplierId,
+            employee_employeeId
+        )
+        VALUES (
+            GETDATE(),
+            @paymentMethod,
+            'Recibido',
+            @subtotal,
+            @taxAmount,
+            @total,
+            @invoiceNumber,
+            @supplierId,
+            @employeeId
+        );
+
+        SET @headerId = SCOPE_IDENTITY();
+
+        INSERT INTO PurchaseDetail (
+            quantity,
+            unitPrice,
+            subtotal,
+            purchaseHeader_id,
+            supply_supplyId
+        )
+        SELECT
+            quantity,
+            unitPrice,
+            subtotal,
+            @headerId,
+            supplyId
+        FROM @details;
+
+        UPDATE s
+        SET s.availableQuantity = s.availableQuantity + d.quantity
+        FROM Supply s
+        INNER JOIN @details d
+            ON d.supplyId = s.supplyId;
+
+        DECLARE @supplierName VARCHAR(100);
+        DECLARE @supplierCompany VARCHAR(100);
+
+        SELECT
+            @supplierName = name,
+            @supplierCompany = company
+        FROM Supplier
+        WHERE supplierId = @supplierId;
+
+        INSERT INTO PurchaseInvoice (
+            subtotal,
+            taxRate,
+            taxAmount,
+            totalAmount,
+            supplierName,
+            supplierCompany,
+            purchaseHeader_id
+        )
+        VALUES (
+            @subtotal,
+            @taxRate,
+            @taxAmount,
+            @total,
+            @supplierName,
+            @supplierCompany,
+            @headerId
+        );
+
+        INSERT INTO PurchaseChangeLog (
+            action,
+            detail,
+            purchaseHeader_id,
+            employee_employeeId
+        )
+        VALUES (
+            'Creó la compra',
+            CONCAT(
+                'Compra registrada. Total: $',
+                @total
+            ),
+            @headerId,
+            @employeeId
+        );
+
+        COMMIT TRANSACTION;
+
+        SELECT @headerId AS purchaseHeaderId;
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+
+    END CATCH
+END
+GO
+
+
+-- ================================================================
+-- STORED PROCEDURE: EDITAR COMPRA
+-- ================================================================
+IF OBJECT_ID('dbo.SP_UpdatePurchase', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.SP_UpdatePurchase;
+GO
+
+CREATE PROCEDURE dbo.SP_UpdatePurchase
+
+    @purchaseHeaderId INT,
+    @supplierId       INT,
+    @employeeId       INT,
+    @paymentMethod    VARCHAR(30),
+    @status           VARCHAR(20),
+    @invoiceNumber    VARCHAR(30) = NULL,
+    @taxRate          DECIMAL(5,2) = 18.00,
+    @detailsJson      NVARCHAR(MAX)
+
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM PurchaseHeader
+            WHERE purchaseHeaderId = @purchaseHeaderId
+        )
+        BEGIN
+            THROW 50003, 'La compra no existe.', 1;
+        END
+
+        DECLARE @newDetails TABLE (
+            supplyId  INT,
+            quantity  DECIMAL(10,3),
+            unitPrice DECIMAL(10,2),
+            subtotal  DECIMAL(10,2)
+        );
+
+        INSERT INTO @newDetails
+        SELECT
+            JSON_VALUE(value, '$.supplyId'),
+            CAST(JSON_VALUE(value, '$.quantity') AS DECIMAL(10,3)),
+            CAST(JSON_VALUE(value, '$.unitPrice') AS DECIMAL(10,2)),
+            CAST(JSON_VALUE(value, '$.quantity') AS DECIMAL(10,3))
+                * CAST(JSON_VALUE(value, '$.unitPrice') AS DECIMAL(10,2))
+        FROM OPENJSON(@detailsJson);
+
+        IF NOT EXISTS (SELECT 1 FROM @newDetails)
+        BEGIN
+            THROW 50004, 'Debe incluir al menos un insumo.', 1;
+        END
+
+        -- DEVOLVER STOCK ANTERIOR
+        UPDATE s
+        SET s.availableQuantity = s.availableQuantity + pd.quantity
+        FROM Supply s
+        INNER JOIN PurchaseDetail pd
+            ON pd.supply_supplyId = s.supplyId
+        WHERE pd.purchaseHeader_id = @purchaseHeaderId;
+
+        DELETE FROM PurchaseDetail
+        WHERE purchaseHeader_id = @purchaseHeaderId;
+
+        DECLARE @subtotal DECIMAL(10,2);
+        DECLARE @taxAmount DECIMAL(10,2);
+        DECLARE @total DECIMAL(10,2);
+
+        SELECT @subtotal = SUM(subtotal)
+        FROM @newDetails;
+
+        SET @taxAmount = ROUND(@subtotal * @taxRate / 100, 2);
+        SET @total = @subtotal + @taxAmount;
+
+        INSERT INTO PurchaseDetail (
+            quantity,
+            unitPrice,
+            subtotal,
+            purchaseHeader_id,
+            supply_supplyId
+        )
+        SELECT
+            quantity,
+            unitPrice,
+            subtotal,
+            @purchaseHeaderId,
+            supplyId
+        FROM @newDetails;
+
+        -- DESCONTAR NUEVO STOCK
+        UPDATE s
+        SET s.availableQuantity = s.availableQuantity - d.quantity
+        FROM Supply s
+        INNER JOIN @newDetails d
+            ON d.supplyId = s.supplyId;
+
+        UPDATE PurchaseHeader
+        SET
+            supplier_supplierId = @supplierId,
+            paymentMethod = @paymentMethod,
+            status = @status,
+            invoiceNumber = @invoiceNumber,
+            subtotal = @subtotal,
+            tax = @taxAmount,
+            total = @total
+        WHERE purchaseHeaderId = @purchaseHeaderId;
+
+        UPDATE PurchaseInvoice
+        SET
+            subtotal = @subtotal,
+            taxAmount = @taxAmount,
+            totalAmount = @total
+        WHERE purchaseHeader_id = @purchaseHeaderId;
+
+        INSERT INTO PurchaseChangeLog (
+            action,
+            detail,
+            purchaseHeader_id,
+            employee_employeeId
+        )
+        VALUES (
+            'Editó la compra',
+            CONCAT(
+                'Compra editada. Nuevo total: $',
+                @total
+            ),
+            @purchaseHeaderId,
+            @employeeId
+        );
+
+        COMMIT TRANSACTION;
+
+        SELECT @purchaseHeaderId AS purchaseHeaderId;
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+
+    END CATCH
+END
+GO
+
+
+-- ================================================================
+-- STORED PROCEDURE: ANULAR COMPRA
+-- ================================================================
+IF OBJECT_ID('dbo.SP_CancelPurchase', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.SP_CancelPurchase;
+GO
+
+CREATE PROCEDURE dbo.SP_CancelPurchase
+
+    @purchaseHeaderId INT,
+    @employeeId INT
+
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM PurchaseHeader
+            WHERE purchaseHeaderId = @purchaseHeaderId
+        )
+        BEGIN
+            THROW 50005, 'La compra no existe.', 1;
+        END
+
+        UPDATE s
+        SET s.availableQuantity = s.availableQuantity - pd.quantity
+        FROM Supply s
+        INNER JOIN PurchaseDetail pd
+            ON pd.supply_supplyId = s.supplyId
+        WHERE pd.purchaseHeader_id = @purchaseHeaderId;
+
+        UPDATE PurchaseHeader
+        SET status = 'Anulado'
+        WHERE purchaseHeaderId = @purchaseHeaderId;
+
+        INSERT INTO PurchaseChangeLog (
+            action,
+            detail,
+            purchaseHeader_id,
+            employee_employeeId
+        )
+        VALUES (
+            'Anuló la compra',
+            'Compra anulada.',
+            @purchaseHeaderId,
+            @employeeId
+        );
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+
+    END CATCH
+END
+GO
+
+
+-- ================================================================
+-- STORED PROCEDURE: AJUSTE MANUAL DE STOCK
+-- ================================================================
+IF OBJECT_ID('dbo.SP_DecreaseStock', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.SP_DecreaseStock;
+GO
+
+CREATE PROCEDURE dbo.SP_DecreaseStock
+
+    @supplyId INT,
+    @quantity DECIMAL(10,3),
+    @reason VARCHAR(200) = 'Ajuste manual',
+    @employeeId INT
+
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+
+        BEGIN TRANSACTION;
+
+        DECLARE @current DECIMAL(10,3);
+
+        SELECT @current = availableQuantity
+        FROM Supply
+        WHERE supplyId = @supplyId;
+
+        IF @current - @quantity < 0
+        BEGIN
+            THROW 50008, 'Stock insuficiente.', 1;
+        END
+
+        UPDATE Supply
+        SET availableQuantity = availableQuantity - @quantity
+        WHERE supplyId = @supplyId;
+
+        INSERT INTO StockAdjustment (
+            quantityDecreased,
+            reason,
+            supply_supplyId,
+            employee_employeeId
+        )
+        VALUES (
+            @quantity,
+            @reason,
+            @supplyId,
+            @employeeId
+        );
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+
+    END CATCH
+END
+GO
+
+
+-- ================================================================
+-- TRIGGERS ACTIVOS
+-- ================================================================
+
+-- Evitar stock negativo
+IF OBJECT_ID('dbo.trg_PreventNegativeStock', 'TR') IS NOT NULL
+    DROP TRIGGER dbo.trg_PreventNegativeStock;
+GO
+
+CREATE TRIGGER dbo.trg_PreventNegativeStock
+ON Supply
+AFTER UPDATE
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    IF EXISTS (
+        SELECT 1
+        FROM inserted
+        WHERE availableQuantity < 0
+    )
+    BEGIN
+        ROLLBACK TRANSACTION;
+        THROW 50010, 'El stock no puede quedar negativo.', 1;
+    END
+END
+GO
+
+
+-- Alerta stock bajo
+IF OBJECT_ID('dbo.trg_CheckStockAlert', 'TR') IS NOT NULL
+    DROP TRIGGER dbo.trg_CheckStockAlert;
+GO
+
+CREATE TRIGGER dbo.trg_CheckStockAlert
+ON Supply
+AFTER UPDATE
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    UPDATE s
+    SET stockAlert =
+        CASE
+            WHEN s.availableQuantity <= s.minimumQuantity THEN 1
+            ELSE 0
+        END
+    FROM Supply s
+    INNER JOIN inserted i
+        ON s.supplyId = i.supplyId;
+
+END
+GO
+
+
+-- ================================================================
+-- VISTA INVENTARIO
+-- ================================================================
+IF OBJECT_ID('dbo.vw_SupplyInventory', 'V') IS NOT NULL
+    DROP VIEW dbo.vw_SupplyInventory;
+GO
+
+CREATE VIEW dbo.vw_SupplyInventory AS
+
+SELECT
+
+    s.supplyId,
+    s.name,
+
+    s.availableQuantity,
+    s.minimumQuantity,
+
+    s.unitOfMeasure,
+    s.stockAlert,
+
+    sc.supplyCategoryId,
+    sc.name AS categoryName,
+
+    lp.lastPurchaseDate,
+    lp.lastSupplierName,
+    lp.lastUnitPrice
+
+FROM Supply s
+
+INNER JOIN SupplyCategory sc
+    ON sc.supplyCategoryId = s.supplyCategory_supplyCategoryId
+
+OUTER APPLY (
+    SELECT TOP 1
+
+        ph.purchaseDate AS lastPurchaseDate,
+        sup.name AS lastSupplierName,
+        pd.unitPrice AS lastUnitPrice
+
+    FROM PurchaseDetail pd
+
+    INNER JOIN PurchaseHeader ph
+        ON ph.purchaseHeaderId = pd.purchaseHeader_id
+
+    INNER JOIN Supplier sup
+        ON sup.supplierId = ph.supplier_supplierId
+
+    WHERE pd.supply_supplyId = s.supplyId
+    AND ph.status <> 'Anulado'
+
+    ORDER BY ph.purchaseDate DESC
+
+) lp;
+GO
+
