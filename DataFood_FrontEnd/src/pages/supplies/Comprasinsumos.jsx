@@ -326,7 +326,7 @@ function HistorySection({ logs = [], fmt }) {
                 ) : filteredLogs.map((log) => (
                     <tr key={log.logId}>
                         <td>{fmt(log.logDate || log.createdAt || log.changeDate || log.date || log.created_at)}</td>
-                        <td>{log.employeeName}</td>
+                        <td>{log.employee_employeeId || log.employeeId}</td>
                         <td><span className="cl-action-badge">{log.action}</span></td>
                         <td>{log.detail}</td>
                     </tr>

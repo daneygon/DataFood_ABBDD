@@ -55,7 +55,12 @@ public class PurchaseHeader {
     @OneToMany(mappedBy = "purchaseHeader", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<PurchaseDetail> details;
 
-    @OneToMany(mappedBy = "purchaseHeader", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(
+            mappedBy = "purchaseHeader",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.EAGER
+    )
+    @OrderBy("logDate DESC")
     private List<PurchaseChangeLog> changeLogs;
 }
 

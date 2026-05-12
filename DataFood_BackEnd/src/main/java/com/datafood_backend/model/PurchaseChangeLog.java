@@ -24,7 +24,6 @@ public class PurchaseChangeLog {
     @Column(name = "detail", nullable = false, length = 500)
     private String detail;
 
-    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "purchaseHeader_id", nullable = false)
     private PurchaseHeader purchaseHeader;
