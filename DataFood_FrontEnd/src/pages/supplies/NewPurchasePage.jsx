@@ -10,9 +10,9 @@ import {
 
 import { getSuppliers } from '../../api/supplierApi.js';
 
-import './NuevaCompraPage.css';
+import './NewPurchasePage.css';
 
-export default function NuevaCompraPage() {
+export default function NewPurchasePage() {
 
     const navigate = useNavigate();
     const { id } = useParams();

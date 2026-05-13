@@ -3,9 +3,9 @@ import { useNavigate }         from 'react-router-dom';
 import { getSupplies, getSupplyCategories } from '../../api/Supplyapi.js';
 import { getSuppliers }        from '../../api/supplierApi';
 import SupplyForm              from './Supplyform';
-import './Inventariogeneral.css';
+import './GeneralInventory.css';
 
-export default function InventarioGeneral() {
+export default function GeneralInventory() {
     const navigate = useNavigate();
     const [supplies,       setSupplies]       = useState([]);
     const [categories,     setCategories]     = useState([]);

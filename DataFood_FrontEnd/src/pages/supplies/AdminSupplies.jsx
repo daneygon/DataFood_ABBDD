@@ -11,9 +11,9 @@ import {
     updateSupply
 } from '../../api/Supplyapi.js';
 
-import './AdminInsumos.css';
+import './AdminSupplies.css';
 
-export default function AdminInsumos() {
+export default function AdminSupplies() {
 
     const navigate = useNavigate();
 

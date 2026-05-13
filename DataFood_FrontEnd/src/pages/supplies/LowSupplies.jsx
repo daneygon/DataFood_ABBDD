@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate }         from 'react-router-dom';
 import { getSupplies }         from '../../api/Supplyapi.js';
-import './InsumosBajos.css';
+import './LowSupplies.css';
 
-export default function InsumosBajos() {
+export default function LowSupplies() {
     const navigate  = useNavigate();
     const [supplies, setSupplies] = useState([]);
     const [loading,  setLoading]  = useState(true);

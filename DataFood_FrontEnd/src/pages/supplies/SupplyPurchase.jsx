@@ -5,7 +5,7 @@ import {
     cancelPurchase
 } from '../../api/Supplyapi.js';
 import { getSuppliers } from '../../api/supplierApi';
-import './Comprasinsumo.css';
+import './SupplyPurchase.css';
 
 /* ─── GENERADORES DE FACTURA ─── */
 
@@ -338,7 +338,7 @@ function HistorySection({ logs = [], fmt }) {
 }
 
 /* ─── COMPONENTE PRINCIPAL ─── */
-export default function Comprasinsumos() {
+export default function SupplyPurchase() {
     const navigate = useNavigate();
 
     const [purchases, setPurchases] = useState([]);
