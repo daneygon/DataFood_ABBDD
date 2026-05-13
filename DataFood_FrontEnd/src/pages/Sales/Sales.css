@@ -1,0 +1,373 @@
+:root {
+    --orange-ventas: #f07c2a;
+    --orange-light: #fbeadd;
+    --teal-ventas: #00b4b4;
+    --bg-ventas: #fdf6ee;
+}
+
+.ventas-page {
+    display: flex;
+    height: 100vh;
+    background-color: var(--bg-ventas);
+    font-family: Arial, sans-serif;
+    color: #333;
+}
+
+/* --- COLUMNA IZQUIERDA --- */
+.ventas-left {
+    flex: 7;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.ventas-filters-top {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.ventas-select {
+    padding: 0.3rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.ventas-search-box {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    background: white;
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    flex: 1;
+    max-width: 300px;
+}
+
+.ventas-search-box input {
+    border: none;
+    outline: none;
+    margin-left: 5px;
+    width: 100%;
+}
+
+.ventas-tabs {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 4px solid var(--teal-ventas);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    overflow-x: auto;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--teal-ventas);
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+.tab-btn.active {
+    color: var(--orange-ventas);
+}
+
+.ventas-table-container {
+    flex: 1;
+    background: white;
+    border: 1px solid #ddd;
+    overflow-y: auto;
+}
+
+.ventas-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+.ventas-table th {
+    background: var(--orange-ventas);
+    color: white;
+    padding: 0.8rem;
+}
+
+.ventas-table td {
+    padding: 0.8rem;
+    border-bottom: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+
+.cat-desayuno {
+    background-color: #fbd6d2;
+    color: #c0392b;
+}
+
+.actions-td {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-qty {
+    width: 30px;
+    height: 30px;
+    background: #00a65a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.ventas-bottom-left {
+    margin-top: 1rem;
+}
+
+/* NUEVO BOTÓN REGRESAR */
+.btn-regresar-ventas {
+    background: #4eb8b1;
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.btn-regresar-ventas:hover {
+    opacity: 0.85;
+}
+
+
+/* --- COLUMNA DERECHA --- */
+.ventas-right {
+    flex: 3;
+    background: var(--orange-light);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    border-left: 2px solid #ddd;
+    max-width: 400px;
+}
+
+.panel-header {
+    background: var(--orange-ventas);
+    color: white;
+    text-align: center;
+    padding: 0.8rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 4px 4px 0 0;
+}
+
+.receipt-box {
+    background: white;
+    padding: 1rem;
+    border: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    min-height: 150px;
+}
+
+.receipt-title {
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.receipt-items {
+    flex: 1;
+    font-size: 0.95rem;
+}
+
+.receipt-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.3rem;
+}
+
+.receipt-total-actual {
+    border-top: 1px solid #ccc;
+    padding-top: 0.5rem;
+    text-align: right;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+/* Formulario Domicilio ARREGLADO */
+.delivery-form {
+    background: #e8d0bc;
+    padding: 0.5rem;
+    border: 1px solid #d4b59c;
+}
+
+.delivery-title {
+    color: white;
+    background: transparent;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.delivery-grid {
+    display: grid;
+    grid-template-columns: 80px 1fr; /* Arreglo para que no se salga */
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.delivery-grid input, .delivery-grid select {
+    padding: 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.address-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.address-actions input {
+    flex: 1;
+    width: 100%; /* Asegura que no rompa el contenedor */
+}
+
+.btn-group-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.btn-teal-small {
+    background: var(--teal-ventas);
+    color: white;
+    border: none;
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+/* Totales y Finalizar */
+.totals-box {
+    background: #f7a976;
+    padding: 1rem;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #333;
+    font-weight: bold;
+}
+
+.total-row input {
+    width: 100px;
+    padding: 0.4rem;
+    text-align: right;
+    border: 1px solid #ccc;
+}
+
+.total-final {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #111;
+}
+
+.total-amount {
+    background: white;
+    padding: 0.3rem 1rem;
+    border-radius: 4px;
+}
+
+.btn-finalizar {
+    background: var(--teal-ventas);
+    color: white;
+    border: none;
+    padding: 1rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    margin-top: auto;
+}
+
+/* --- ESTILOS DE VALIDACIÓN --- */
+.ventas-input-error {
+    border: 1px solid #e74c3c !important;
+    background-color: #fdf2f1 !important;
+}
+
+.ventas-error-text {
+    color: #e74c3c;
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+    font-weight: 600;
+}
+
+/* --- MODAL DE CONFIRMACIÓN --- */
+.confirm-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.confirm-modal-box {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.confirm-modal-box h2 {
+    margin-top: 0;
+    color: var(--orange-ventas);
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.btn-confirm-yes {
+    background: #00a65a;
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-confirm-no {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+}

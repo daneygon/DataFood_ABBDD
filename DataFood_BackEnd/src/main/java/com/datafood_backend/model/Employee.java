@@ -3,11 +3,6 @@ package com.datafood_backend.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
-/**
- * FIX #6: Este modelo faltaba en el proyecto.
- * PurchaseHeader, PurchaseChangeLog y StockAdjustment referencian Employee.
- * Mapea la tabla Employee del SQL (solo los campos que el backend necesita por ahora).
- */
 @Data
 @Entity
 @Table(name = "Employee")
@@ -30,6 +25,10 @@ public class Employee {
     @Column(name = "nationalId", nullable = false, length = 45, unique = true)
     private String nationalId;
 
+    // FIX
+    @Column(name = "phone", length = 20)
+    private String phone;
+
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
@@ -39,7 +38,6 @@ public class Employee {
     @Column(name = "salary", nullable = false, precision = 10, scale = 2)
     private java.math.BigDecimal salary;
 
-    // Relación con Position (tabla Position del SQL)
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "position_positionId", nullable = false)
     private Position position;
